@@ -1,0 +1,42 @@
+---
+title: "lab12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# One run
+
+```{r}
+Z = rnorm(50)
+sigma.hat = sd(Z)^2
+```
+
+
+# Repeated runs
+
+```{r}
+results = c()
+for (i in 1:5000) {
+  Z = rnorm(50)
+  results = c(results, sd(Z))
+}
+plot(density(results))
+abline(v=1)
+```
+
+# Bootstrap
+
+```{r}
+Z = rnorm(50)
+results = c()
+for (i in 1:5000) {
+  Z_star = sample(Z, 50, replace=TRUE)
+  results = c(results, sd(Z_star))
+}
+plot(density(results))
+abline(v=sd(Z))
+abline(v=1, col='red')
+```

@@ -1,0 +1,34 @@
+---
+title: "lab8"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ISLR)
+data(Default)
+str(Default)
+```
+
+```{r model2}
+model2 = glm(default ~ student, data=Default, family=binomial)
+summary(model2)
+```
+
+```{r model3}
+model3 = glm(default ~ student + balance + income, data=Default, family=binomial)
+summary(model3)
+```
+
+```{r stepwise}
+model.step = step(glm(default ~ 1, data=Default, family=binomial), scope=list(upper = ~ student + balance + income), direction='forward')
+summary(model.step)
+```
+
+```{r probit}
+model.probit = glm(default ~ balance + student + income, family=binomial(link='probit'), data=Default)
+summary(model.probit)
+```

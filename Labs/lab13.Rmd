@@ -1,0 +1,45 @@
+---
+title: "lab13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data generation
+
+```{r}
+n = 1000
+X1 = rnorm(n)
+X2 = rnorm(n)
+X3 = X1 + 3 * X2 + 0.05 * rnorm(n)
+Y = X1 + 2 * X2 + rnorm(n)
+D = data.frame(X1=X1, X2=X2, X3=X3, Y=Y)
+```
+
+# Forward vs. backward
+
+```{r forward}
+lm.forward = step(lm(Y ~ 1, data=D), scope=list(upper=~X1 + X2 + X3 + X1:X3), 
+                  direction='forward', k=log(n))
+lm.forward
+```
+
+```{r backward}
+lm.backward = step(lm(Y ~ X1 + X2 + X3, data=D),  
+                  direction='backward')
+lm.backward
+```
+
+
+```{r backward}
+lm.backward = step(lm(Y ~ X1, data=D),  scope=list(upper = ~ X1 + X2 + X3, lower = ~1),
+                  direction='both', k=log(n))
+lm.backward
+```
+
+```{r leaps}
+library(leaps)
+leaps(x=cbind(X1, X2, X3), y=Y, method='Cp')
+```

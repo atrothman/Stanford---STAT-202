@@ -1,0 +1,94 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+library(ggplot2)
+library(splines)
+set.seed(1)
+```
+
+Define a true function $f$
+```{r}
+f = function(x) {
+   x^2 - 0.2*x^2.3333
+}
+```
+Now, we sample a random observation of the function at 10 input points with normal errors. We repeat this 4 times and show each repetition in different colors.
+
+```{r}
+d = data.frame("x"=seq(0,100,0.1))
+d$f = f(d$x)
+# Samples
+s = data.frame("x"=c(3,10,80,70,65,43,90,40,32,15,98))
+means = f(s$x)
+s$f1 = rnorm(n=length(s$x),mean=means,sd=rep(250,length(s$x)))
+s$f2 = rnorm(n=length(s$x),mean=means,sd=rep(250,length(s$x)))
+s$f3 = rnorm(n=length(s$x),mean=means,sd=rep(250,length(s$x)))
+s$f4 = rnorm(n=length(s$x),mean=means,sd=rep(250,length(s$x)))
+lims = scale_y_continuous(limits=c(-500,1300),name="f(x)")
+```
+
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f1),color='red') + lims
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f2),color='blue') + lims
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f3),color='green') + lims
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f4),color='orange')+ lims
+```
+
+Now, for each realization of our experiment, we fit a spline that estimates the true function in black.
+```{r}
+# Spline fits
+fit = lm(f1~bs(x,df=5),data=s)
+d$f1 = predict(object=fit,newdata=list(x=d$x))
+fit = lm(f2~bs(x,df=5),data=s)
+d$f2 = predict(object=fit,newdata=list(x=d$x))
+fit = lm(f3~bs(x,df=5),data=s)
+d$f3 = predict(object=fit,newdata=list(x=d$x))
+fit = lm(f4~bs(x,df=5),data=s)
+d$f4 = predict(object=fit,newdata=list(x=d$x))
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f1),color='red') + geom_line(data=d,aes(x=x,y=f1),color='red') + lims
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f2),color='blue') + geom_line(data=d,aes(x=x,y=f2),color='blue') + lims
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f3),color='green') + geom_line(data=d,aes(x=x,y=f3),color='green') + lims
+```
+```{r}
+ggplot(d,aes(x=x,y=f)) + geom_line()  + geom_point(data=s,aes(x=x,y=f4),color='orange') + geom_line(data=d,aes(x=x,y=f4),color='orange') + lims
+```
+
+Suppose we want to make a prediction at a specific point $x_0$. 
+The procedure we've employed, fitting a spline, has a Mean Squared Error at this test point. 
+We know that this is split into variance and squared bias components.
+The variance measures the variability of $\hat{f}(x_0)$, the fit evaluated at the test point, when we repeat the sampling of the data (all 10 points). 
+
+We can visualize this by examining the 4 fits above at ￼$x_0=70$￼ .
+```{r}
+valuesAt70 = data.frame('x'=rep(70,4),'f'=c(d$f1[701],d$f2[701],d$f3[701],d$f4[701])) 
+ggplot(d,aes(x=x,y=f)) + geom_line() + geom_line(data=d,aes(x=x,y=f1),color='red') + geom_line(data=d,aes(x=x,y=f2),color='blue') + geom_line(data=d,aes(x=x,y=f3),color='green') + geom_line(data=d,aes(x=x,y=f4),color='orange') + geom_point(data=valuesAt70,aes(x=x,y=f)) + lims
+```
+If we repeated the experiment many times, we would be able to estimate the variance exactly.
+The bias measures whether the estimates ￼ tend to err "in the same direction" " with respect to the true at $x_0=70$.
+Just from 4 repetitions of the experiment, it is hard to tell. In this case the estimate fell below the true
+function once, and above once at  $x_0=70$. 
+
+If we were able to repeat the experiment many times, we could measure the bias by taking the difference between the average prediction, plotted below as a dashed line and the true function.
+```{r}
+d$average = (d$f1+d$f2+d$f3+d$f4)/4
+valuesAt70 = data.frame(x=rep(70,2), f=c(d$f[701],d$average[701])) 
+ggplot(d,aes(x=x,y=f)) + geom_line() + geom_line(data=d,aes(x=x,y=average),linetype='dashed') + geom_point(data=valuesAt70,aes(x=x,y=f)) + lims
+```
+From this limited number of repetitions, there seems to be almost no bias at $x_0=70$.
+
+￼

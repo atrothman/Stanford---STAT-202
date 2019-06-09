@@ -1,0 +1,73 @@
+---
+title: "lab19"
+output: html_document
+---
+
+
+# Fitting classification trees
+
+```{r}
+library(tree)
+library(ISLR)
+data(Carseats)
+```
+
+
+```{r}
+Carseats$High = factor(ifelse(Carseats$Sales <= 8, "No", "Yes")) # forcing a factor seemed necessary -- not in code in book
+tree.carseats = tree(High ~ . - Sales, data=Carseats)
+summary(tree.carseats)
+```
+
+# Plotting the tree
+
+```{r}
+plot(tree.carseats)
+text(tree.carseats, pretty=0, cex=0.5)
+```
+
+# Evaluating tree via test error
+
+```{r}
+set.seed(2)
+train = sample(1:nrow(Carseats), 200)
+Carseats.test = Carseats[-train,]
+carseats.train = tree(High ~ . - Sales, subset=train, data=Carseats)
+tree.pred.test = predict(carseats.train, Carseats.test, type='class')
+table(tree.pred.test, Carseats.test$High)
+```
+
+# Cross-validation error
+
+```{r}
+set.seed(3)
+cv.carseats = cv.tree(carseats.train, FUN=prune.misclass)
+cv.carseats
+par(mfrow=c(1,2))
+plot(cv.carseats$size, cv.carseats$dev, type='b')
+plot(cv.carseats$k, cv.carseats$dev, type='b')
+```
+
+# Pruning the tree
+
+
+```{r}
+prune.carseats = prune.misclass(carseats.train, best=9)
+plot(prune.carseats)
+text(prune.carseats, pretty=0)
+```
+
+# Evaluating final test error
+
+```{r}
+tree.pred.test = predict(prune.carseats, Carseats.test, type='class')
+table(tree.pred.test, Carseats.test$High)
+```
+
+# A different value of $k=(\alpha)$
+
+```{r}
+prune.carseats = prune.misclass(carseats.train, best=15)
+tree.pred.test = predict(prune.carseats, Carseats.test, type='class')
+table(tree.pred.test, Carseats.test$High)
+```

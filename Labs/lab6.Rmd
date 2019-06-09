@@ -1,0 +1,33 @@
+```{r}
+Advertising = read.csv("http://www-bcf.usc.edu/~gareth/ISL/Advertising.csv", header=TRUE)
+str(Advertising)
+pairs(Advertising[,-1])
+```
+
+```{r}
+lm.fit = lm(sales ~ TV, data=Advertising)
+summary(lm.fit)
+```
+```{r}
+adv.data = Advertising[,-1]
+forward.lm = step(lm(sales ~ 1, data=adv.data), scope=list(upper= ~ TV + newspaper + radio), direction='forward')
+```
+```{r}
+summary(forward.lm)
+```
+
+```{r}
+confint(lm.fit)
+```
+
+```{r}
+anova(lm(sales ~ 1, data=Advertising), lm.fit)
+sqrt(601.62)
+```
+
+```{r}
+X = (runif(200) - 0.5) * 4
+Y = X^2 + rnorm(200)
+summary(lm(Y ~ X))
+plot(X, Y)
+```

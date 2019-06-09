@@ -1,0 +1,129 @@
+---
+title: "lab14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Credit dataset
+
+```{r}
+library(ISLR)
+names(Credit)
+summary(Credit)
+M = lm(Balance ~ . - ID, data=Credit)
+```
+
+
+# LASSO with glmnet
+
+```{r}
+library(glmnet)
+X = scale(model.matrix(M)[,-1], center=TRUE, scale=TRUE)
+Y = Credit$Balance
+cvG = cv.glmnet(X, Y)
+plot(cvG)
+```
+
+# Coefficient path
+
+```{r}
+G = glmnet(X, Y)
+plot(G, xvar='lambda')
+abline(v=log(cvG$lambda.min), col='green', lty=2)
+abline(v=log(cvG$lambda.1se), col='green', lty=2)
+```
+
+# Extracting a coefficient
+
+```{r getcoef}
+coef(G, s=cvG$lambda.1se)
+```
+
+# Dangers of using LASSO selected variables in inference
+
+Let's generate some null data and then compute p-values and confidence intervals.
+If p-values are valid, they should be uniformly distributed. If confidence
+intervals are valid, 95% should cover 0.
+```{r}
+simulate_null = function(n=200, p=100) {
+  while (TRUE) {
+  X = matrix(rnorm(n*p), n, p)
+  Y = rnorm(n)
+  cvG = cv.glmnet(X, Y)
+  G = glmnet(X, Y)
+  beta.lasso = as.numeric(coef(G, s=cvG$lambda.min)[-1])
+  if (sum(beta.lasso != 0) > 1) { # 1 instead of 0 to avoid silly matrix shaping
+    selected = beta.lasso != 0
+    M = lm(Y ~ X[,selected])
+    intervals = confint(M)[-1,]
+    covered = (intervals[,1] < 0) * (intervals[,2] > 0)
+    pvalues = summary(M)$coef[,4][-1]
+    return(list(covered=covered, pvalues=pvalues))
+    break
+    }
+  }
+}
+```
+
+Let's run this several times.
+```{r}
+coverage = c()
+pvalues = c()
+for (i in 1:20) {
+  results = simulate_null()
+  coverage = c(coverage, results$covered)
+  pvalues = c(pvalues, results$pvalues)
+}
+print(mean(coverage))
+print(mean(pvalues < 0.05))
+plot(ecdf(pvalues))
+```
+
+Let's assume we have an additional validation data set.
+
+```{r}
+simulate_null_validation = function(n=200, p=100) {
+  while (TRUE) {
+  X = matrix(rnorm(n*p), n, p)
+  Y = rnorm(n)
+  cvG = cv.glmnet(X, Y)
+  G = glmnet(X, Y)
+  beta.lasso = as.numeric(coef(G, s=cvG$lambda.min)[-1])
+  if (sum(beta.lasso != 0) > 1) { # 1 instead of 0 to avoid silly matrix shaping
+    selected = beta.lasso != 0
+    Xvalid = matrix(rnorm(n*p), n, p)
+    Yvalid = rnorm(n)
+    M = lm(Yvalid ~ Xvalid[,selected])
+    intervals = confint(M)[-1,]
+    covered = (intervals[,1] < 0) * (intervals[,2] > 0)
+    pvalues = summary(M)$coef[,4][-1]
+    return(list(covered=covered, pvalues=pvalues))
+    break
+    }
+  }
+}
+
+coverage_valid = c()
+pvalues_valid = c()
+for (i in 1:20) {
+  results = simulate_null_validation()
+  coverage_valid = c(coverage_valid, results$covered)
+  pvalues_valid = c(pvalues_valid, results$pvalues)
+}
+print(mean(coverage_valid))
+print(mean(pvalues_valid < 0.05))
+plot(ecdf(pvalues_valid))
+```
+
+# Principal components regression
+
+```{r}
+set.seed(2)
+pcr.fit = pcr(Salary ~ ., data=Hitters, scale=TRUE, validation="CV")
+summary(pcr.fit)
+validationplot(pcr.fit, val.type="MSEP")
+pcr.fit.selecte = pcr(Salary ~ ., data=Hitters, scale=TRUE, validation="CV", ncomp=7)
+```

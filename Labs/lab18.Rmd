@@ -1,0 +1,87 @@
+---
+title: "lab18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Wage dataset
+
+```{r}
+library(ISLR)
+names(Wage)
+str(Wage)
+```
+
+# GAM using natural splines 
+
+## Just a linear model
+
+
+```{r}
+library(splines)
+gam1 = lm(wage ~ ns(year, 4) + ns(age, 5) + education, data=Wage)
+```
+
+## Using a `library(gam)` 
+
+```{r}
+library(gam)
+gam2 = gam(wage ~ ns(year, 4) + ns(age, 5) + education, data=Wage)
+par(mfrow=c(1,3))
+plot(gam2, se=TRUE, col='blue')
+```
+
+# GAM using smoothing splines
+
+```{r}
+library(gam)
+gam3 = gam(wage ~ s(year, df=4) + s(age, df=5) + education, data=Wage)
+par(mfrow=c(1,3))
+plot(gam2, se=TRUE, col='blue')
+```
+
+## ANOVA tests
+
+```{r}
+M1 = gam(wage ~ s(age, df=5) + education, data=Wage)
+M2 = gam(wage ~ year + s(age, df=5) + education, data=Wage)
+M3 = gam(wage ~ s(year, df=4) + s(age, df=5) + education, data=Wage)
+anova(M1, M2, M3)
+```
+
+
+## GAM summary
+
+```{r}
+summary(gam3)
+```
+
+# Using local regression
+
+```{r}
+gam4 = gam(wage ~ year + lo(age, span=0.5) + education, data=Wage)
+par(mfrow=c(1,3))
+plot(gam4, se=TRUE, col='red')
+summary(gam4)
+```
+# Logistic regression
+
+```{r}
+Wage$high_earn = Wage$wage > 250
+logistic_gam = gam(high_earn ~ year + s(age, df=5) + education, family=binomial, data=Wage)
+summary(logistic_gam)
+par(mfrow=c(1,3))
+plot(logistic_gam, se=TRUE, col='green')
+```
+
+```{r}
+Wage$high_earn = Wage$wage > 250
+logistic_gam = gam(high_earn ~ year + s(age, df=5) + education, family=binomial, data=Wage, 
+                   subset=(education != "1. < HS Grad"))
+summary(logistic_gam)
+par(mfrow=c(1,3))
+plot(logistic_gam, se=TRUE, col='green')
+```

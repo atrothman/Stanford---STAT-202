@@ -1,0 +1,98 @@
+---
+title: "lab20"
+output: html_document
+---
+
+
+# Boston data with r
+
+```{r}
+library(MASS)
+data(Boston)
+```
+
+## Using a regression tree
+
+```{r}
+library(tree)
+set.seed(1)
+train = sample(1:nrow(Boston), nrow(Boston)/2)
+tree.boston = tree(medv ~ ., data=Boston, subset=train)
+cv.boston = cv.tree(tree.boston)
+plot(cv.boston$size, cv.boston$dev, type='b')
+```
+
+## Pruned tree
+
+```{r}
+pruned.boston = prune.tree(tree.boston, best=5)
+yhat.tree = predict(pruned.boston, newdata=Boston[-train,])
+boston.test = Boston$medv[-train]
+mean((yhat.tree - boston.test)^2)
+```
+
+# Bagging -- using all variables in every bootstrap sample
+
+```{r}
+library(randomForest)
+set.seed(1) # uncomment to get same forest as in book
+boston.bag = randomForest(medv ~ ., data=Boston, subset=train, mtry=13, importance=TRUE)
+boston.bag
+```
+
+## Test MSE for bagging
+
+```{r}
+yhat.bag = predict(boston.bag, newdata=Boston[-train,])
+
+plot(yhat.bag, boston.test)
+mean((yhat.bag - boston.test)^2)
+```
+
+## Fewer trees -- does it make a difference?
+
+```{r}
+boston.bag = randomForest(medv ~ ., data=Boston, subset=train, mtry=13, ntree=25)
+yhat.bag = predict(boston.bag, newdata=Boston[-train,])
+mean((yhat.bag - boston.test)^2)
+```
+
+# Random forest -- decrease `mtry`
+
+```{r}
+boston.rf = randomForest(medv ~ ., data=Boston, subset=train, mtry=6)
+yhat.rf = predict(boston.rf, newdata=Boston[-train,])
+mean((yhat.rf - boston.test)^2)
+
+```
+
+## Variable importance
+
+```{r}
+importance(boston.rf)
+varImpPlot(boston.rf)
+```
+
+# Boosting
+
+```{r}
+library(gbm)
+set.seed(1)
+boost.boston = gbm(medv ~ ., data=Boston[train,], 
+                   distribution='gaussian',
+		   n.trees=5000,
+		   interaction.depth=4)
+```
+
+## Marginal effects
+
+```{r}
+plot(boost.boston, i='rm')
+```
+
+## Comparing MSE to other methods
+
+```{r}
+yhat.boost = predict(boost.boston, newdata=Boston[-train,], n.trees=5000)
+mean((yhat.boost - boston.test)^2)
+```

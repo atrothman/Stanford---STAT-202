@@ -1,0 +1,43 @@
+---
+title: "lab17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Wage dataset
+
+```{r}
+library(ISLR)
+names(Wage)
+str(Wage)
+```
+
+# Smoothing spline
+
+
+```{r}
+plot(age, wage)
+spline_fit_16 = smooth.spline(Wage$age, Wage$wage, df=16)
+spline_fit_CV = smooth.spline(Wage$age, Wage$wage, cv=TRUE)
+lines(spline_fit_16$x, spline_fit_16$y, lwd=4, col='red')
+lines(spline_fit_CV$x, spline_fit_CV$y, lwd=4, col='blue')
+```
+
+# Local regression
+
+
+```{r}
+plot(age ,wage)
+loess_constant_fit = loess(wage ~ age, Wage, degree=0) # local constant
+loess_linear_fit = loess(wage ~ age, Wage, degree=1) # local linear
+loess_quadratic_fit = loess(wage ~ age, Wage, degree=2) # local quadratic
+o = order(loess_constant_fit$x)
+lines(loess_constant_fit$x[o], predict(loess_constant_fit)[o], col='orange', lwd=4)
+o = order(loess_linear_fit$x)
+lines(loess_linear_fit$x[o], predict(loess_linear_fit)[o], col='red', lwd=4)
+o = order(loess_quadratic_fit$x)
+lines(loess_quadratic_fit$x[o], predict(loess_quadratic_fit)[o], col='blue', lwd=4)
+```
